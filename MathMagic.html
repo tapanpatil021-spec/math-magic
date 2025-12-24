@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Math Magic</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body{
+    margin:0;
+    font-family:'Segoe UI',Arial,sans-serif;
+    height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    color:white;
+    background:
+      radial-gradient(circle at top,#4facfe,#0072ff),
+      repeating-linear-gradient(45deg,rgba(255,255,255,0.04),rgba(255,255,255,0.04) 2px,transparent 2px,transparent 40px);
+}
+body::before{
+    content:"+ − × ÷ π √ ∑ ∞";
+    position:fixed;
+    font-size:60px;
+    opacity:0.05;
+    letter-spacing:40px;
+    width:200%;
+    height:200%;
+    top:-50%;
+    left:-50%;
+    transform:rotate(-20deg);
+    pointer-events:none;
+}
+
+.page{
+    display:none;
+    background:rgba(0,0,0,0.45);
+    backdrop-filter:blur(10px);
+    padding:25px;
+    border-radius:18px;
+    width:340px;
+    text-align:center;
+    position:relative;
+}
+.active{display:block;}
+
+.topLeft,.topRight{
+    position:absolute;
+    top:12px;
+    padding:6px 12px;
+    border-radius:20px;
+    font-size:12px;
+    font-weight:bold;
+    cursor:pointer;
+}
+.topLeft{
+    left:12px;
+    background:#fff;
+    color:#000;
+}
+.topRight{
+    right:12px;
+    background:#ffeb3b;
+    color:#000;
+}
+
+.creator{
+    font-size:14px;
+    opacity:0.85;
+    margin-bottom:4px;
+    font-style:italic;
+}
+
+h1{
+    font-size:34px;
+    margin:4px 0 15px;
+}
+
+button{
+    width:100%;
+    padding:12px;
+    margin:8px 0;
+    border:none;
+    border-radius:10px;
+    font-size:16px;
+    font-weight:bold;
+    cursor:pointer;
+    background:linear-gradient(135deg,#00e676,#00c853);
+}
+
+input{
+    width:100%;
+    padding:12px;
+    font-size:18px;
+    border-radius:8px;
+    border:none;
+    margin:10px 0;
+    text-align:center;
+}
+
+.explain{
+    background:#111;
+    padding:10px;
+    border-radius:8px;
+    margin-top:10px;
+    font-size:14px;
+}
+</style>
+</head>
+
+<body>
+
+<!-- HOME -->
+<div class="page active" id="home">
+    <div class="topLeft" onclick="showPage('settings')">⚙ Settings</div>
+    <div class="topRight" onclick="showPage('levelPage')">My Level</div>
+
+    <div class="creator">Discovered by – <b>Tapan Patil</b></div>
+    <h1>✨ Math Magic ✨</h1>
+
+    <button onclick="selectMode('practice')">Practice Mode</button>
+    <button onclick="selectMode('timer')">Timer Mode</button>
+    <button onclick="selectMode('point')">Point Mode</button>
+</div>
+
+<!-- SETTINGS -->
+<div class="page" id="settings">
+    <h2>⚙ Settings</h2>
+    <button onclick="toggleSound()">Sound: <span id="soundText">ON</span></button>
+    <button onclick="showPage('home')">Back</button>
+</div>
+
+<!-- LEVEL -->
+<div class="page" id="levelPage">
+    <h2>📊 Progress</h2>
+    <p>
+        Points: <b id="pointsText">0</b><br>
+        Level: <b id="levelText">0</b><br>
+        Rank: <b id="rankText">Beginner</b>
+    </p>
+    <button onclick="showPage('home')">Back</button>
+</div>
+
+<!-- DIFFICULTY -->
+<div class="page" id="difficulty">
+    <h2>Select Difficulty</h2>
+    <button onclick="startGame('easy')">Easy</button>
+    <button onclick="startGame('medium')">Medium</button>
+    <button onclick="startGame('hard')">Hard</button>
+</div>
+
+<!-- GAME -->
+<div class="page" id="game">
+    <h2 id="question"></h2>
+    <input type="number" id="answer" placeholder="Your answer">
+    <button onclick="checkAnswer()">Submit</button>
+    <div id="result"></div>
+    <div class="explain" id="explain" style="display:none;"></div>
+    <button onclick="nextQuestion()">Next</button>
+</div>
+
+<!-- Sounds -->
+<audio id="correctSound" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
+<audio id="wrongSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
+
+<script>
+let num1,num2,op,correct;
+let maxNum=10;
+let points = Number(localStorage.getItem("points")) || 0;
+let soundOn = localStorage.getItem("sound") !== "off";
+
+function level(){return Math.floor(points/100);}
+function rank(){return level()<=10?"Beginner":level()<=20?"Good":"Expert";}
+
+function play(id){
+    if(soundOn) document.getElementById(id).play();
+}
+
+function toggleSound(){
+    soundOn=!soundOn;
+    localStorage.setItem("sound",soundOn?"on":"off");
+    updateUI();
+}
+
+function showPage(id){
+    document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+    updateUI();
+}
+
+function selectMode(){showPage("difficulty");}
+
+function startGame(diff){
+    maxNum=diff==="easy"?10:diff==="medium"?25:50;
+    showPage("game");
+    generateQuestion();
+}
+
+function generateQuestion(){
+    document.getElementById("result").innerText="";
+    document.getElementById("explain").style.display="none";
+    document.getElementById("answer").value="";
+
+    num1=Math.floor(Math.random()*maxNum)+1;
+    num2=Math.floor(Math.random()*maxNum)+1;
+    const ops=["+","-","*","/"];
+    op=ops[Math.floor(Math.random()*4)];
+
+    if(op==="+") correct=num1+num2;
+    if(op==="-") correct=num1-num2;
+    if(op==="*") correct=num1*num2;
+    if(op==="/"){correct=num1;num1*=num2;}
+
+    document.getElementById("question").innerText=`${num1} ${op} ${num2} = ?`;
+}
+
+function checkAnswer(){
+    const ans=Number(answer.value);
+    if(ans===correct){
+        points+=10;
+        localStorage.setItem("points",points);
+        play("correctSound");
+        result.innerText="✅ Correct +10";
+    }else{
+        play("wrongSound");
+        result.innerText="❌ Wrong";
+        explain.style.display="block";
+        explain.innerHTML=`${num1} ${op} ${num2} = ${correct}`;
+    }
+}
+
+function nextQuestion(){generateQuestion();}
+
+function updateUI(){
+    pointsText.innerText=points;
+    levelText.innerText=level();
+    rankText.innerText=rank();
+    soundText.innerText=soundOn?"ON":"OFF";
+}
+updateUI();
+</script>
+
+</body>
+</html>
